@@ -407,3 +407,31 @@
 @media (prefers-reduced-motion: reduce) {
   #refreshBtn.spinning { animation: none; opacity: 0.6; }
 }
+
+/* ---------- Thread modal — bound the parent so long messages scroll ---------- */
+/* The thread modal stacks: parent message, replies list, compose. Without a
+   cap, a long parent (e.g. the v2 status report) expands and pushes the
+   replies + compose out of view. Cap to ~30vh with internal scroll, leaving
+   room for the replies and compose box. */
+.thread-body .thread-parent {
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+/* Cap the whole modal to viewport so nothing escapes off-screen, regardless
+   of which dialog is open. Inner regions handle their own scrolling. */
+.aim-modal {
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+.aim-modal .window-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* Thread body is itself a flex container; let it stretch and let children
+   decide their own scroll regions. */
+.aim-modal .window-body.thread-body {
+  overflow: hidden;
+}

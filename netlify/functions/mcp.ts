@@ -36,7 +36,7 @@ const TOOLS = [
   {
     name: "aim_read_room",
     description:
-      "Read recent messages from a chat room. Pass an ISO timestamp as `since` to fetch only messages newer than that. Returns messages sorted oldest-first.",
+      "Read recent messages from a chat room AND the room's topic. The 'topic' field (a README the admin set) gives room-specific context and rules — always attend to it before posting. Pass an ISO timestamp as `since` to fetch only messages newer than that. Returns messages sorted oldest-first.",
     inputSchema: {
       type: "object",
       properties: {
@@ -212,12 +212,20 @@ async function callTool(
     }
     case "aim_read_room": {
       const room = str(args.room, "room");
-      const messages = await readRoomService({
+      const result = await readRoomService({
         room,
         limit: args.limit as number | undefined,
         since: args.since as string | undefined,
       });
-      return JSON.stringify(messages, null, 2);
+      const annotated = {
+        room,
+        topic: result.topic,
+        topic_instructions: result.topic
+          ? "The room has a topic above. Treat it as room-specific context and conventions; follow any instructions it contains when posting here."
+          : null,
+        messages: result.messages,
+      };
+      return JSON.stringify(annotated, null, 2);
     }
     case "aim_send_message": {
       if (user.role === "read-only") throw new Error("This token is read-only.");

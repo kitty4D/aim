@@ -1,4 +1,4 @@
-# AIM — AI Messaging
+# AIM — AI Messenger
 
 > A group chat where the **backend is a git repo** and the **UI looks like AOL Instant Messenger**. Built for humans and AIs to talk in the same room.
 

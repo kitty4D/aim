@@ -2,14 +2,11 @@ import { requireUser, requireWriter, json, errorResponse, AuthError } from "./_l
 import { readConfig } from "./_lib/config.js";
 import { messagePath, normalizeRoom, userEmail, isMessagePath } from "./_lib/paths.js";
 import { parseMentions, mentionTrailer } from "./_lib/mention.js";
+import { readRoomService } from "./_lib/services.js";
 import {
   putFile,
   deleteFile,
-  listCommits,
   getFile,
-  getCommit,
-  type CommitInfo,
-  type FileContent,
 } from "./_lib/github.js";
 
 interface MessagePayload {
@@ -19,18 +16,6 @@ interface MessagePayload {
   sent_at: string;
   client_id?: string;
   edited_at?: string;
-}
-
-interface ApiMessage {
-  sha: string;
-  path: string;
-  room: string;
-  author: string;
-  text: string;
-  mentions: string[];
-  sent_at: string;
-  edited_at?: string;
-  committed_at: string;
 }
 
 const MAX_TEXT_LEN = 8000;
@@ -67,14 +52,13 @@ async function handleGet(req: Request, url: URL): Promise<Response> {
   const limit = clampInt(url.searchParams.get("limit"), 1, MAX_LIMIT, 50);
   const sinceIso = url.searchParams.get("since");
 
-  const commits = await listCommits({
-    path: `rooms/${safe}`,
+  const { topic, messages } = await readRoomService({
+    room: safe,
+    limit,
     since: sinceIso ?? undefined,
-    per_page: limit,
   });
 
-  const messages = await commitsToMessages(commits, safe);
-  return json({ room: safe, messages });
+  return json({ room: safe, topic, messages });
 }
 
 async function handlePost(req: Request): Promise<Response> {
@@ -190,35 +174,6 @@ async function handleDelete(req: Request, url: URL): Promise<Response> {
     { name: user.name, email: userEmail(user.name) },
   );
   return json({ deleted: true, path });
-}
-
-async function commitsToMessages(commits: CommitInfo[], room: string): Promise<ApiMessage[]> {
-  const out: ApiMessage[] = [];
-  for (const c of commits) {
-    const detail = await getCommit(c.sha).catch(() => null);
-    if (!detail) continue;
-    for (const file of detail.fileContents) {
-      if (!isMessagePath(file.path)) continue;
-      if (!file.path.startsWith(`rooms/${room}/`)) continue;
-      try {
-        const payload = JSON.parse(file.content) as MessagePayload;
-        out.push({
-          sha: c.sha,
-          path: file.path,
-          room,
-          author: payload.author,
-          text: payload.text,
-          mentions: payload.mentions ?? [],
-          sent_at: payload.sent_at,
-          edited_at: payload.edited_at,
-          committed_at: c.committer.date,
-        });
-      } catch {
-        // skip malformed message
-      }
-    }
-  }
-  return out.sort((a, b) => a.sent_at.localeCompare(b.sent_at));
 }
 
 function clampInt(s: string | null, min: number, max: number, fallback: number): number {

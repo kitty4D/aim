@@ -13,9 +13,10 @@ import { Client } from "./client.js";
 const FALLBACK_REFRESH_MS = 60_000;
 
 class PulseBackend {
-  constructor(config, listeners) {
+  constructor(config, listeners, globalListeners) {
     this.config = config;
     this.listeners = listeners;
+    this.globalListeners = globalListeners;
     this.lastSha = {};
     this.timer = null;
     this.fallbackTimer = null;
@@ -48,6 +49,9 @@ class PulseBackend {
           this.lastSha[room] = sha;
         }
       }
+      for (const cb of this.globalListeners) {
+        try { cb(pulse); } catch (e) { console.warn("[aim/realtime] global listener error:", e); }
+      }
     } catch (e) {
       console.warn("[aim/realtime] pulse poll failed:", e.message);
     }
@@ -61,9 +65,10 @@ class PulseBackend {
 }
 
 class SseBackend {
-  constructor(config, listeners) {
+  constructor(config, listeners, globalListeners) {
     this.config = config;
     this.listeners = listeners;
+    this.globalListeners = globalListeners;
     this.source = null;
     this.fallback = null;
   }
@@ -96,7 +101,7 @@ class SseBackend {
   _fallbackToPulse() {
     if (this.fallback) return;
     const fb = this.config.fallback || { mode: "pulse", endpoint: "/api/pulse", poll_interval_ms: 10000 };
-    this.fallback = new PulseBackend(fb, this.listeners);
+    this.fallback = new PulseBackend(fb, this.listeners, this.globalListeners);
     this.fallback.start();
   }
 
@@ -109,12 +114,13 @@ class SseBackend {
 export const Realtime = {
   backend: null,
   listeners: {},
+  globalListeners: [],
 
   async init(config) {
     if (this.backend) this.backend.stop();
     const mode = (config && config.mode) || "pulse";
-    if (mode === "sse") this.backend = new SseBackend(config, this.listeners);
-    else this.backend = new PulseBackend(config, this.listeners);
+    if (mode === "sse") this.backend = new SseBackend(config, this.listeners, this.globalListeners);
+    else this.backend = new PulseBackend(config, this.listeners, this.globalListeners);
     await this.backend.start();
   },
 
@@ -126,8 +132,13 @@ export const Realtime = {
     delete this.listeners[room];
   },
 
+  subscribeGlobal(callback) {
+    this.globalListeners.push(callback);
+  },
+
   stop() {
     if (this.backend) this.backend.stop();
     this.listeners = {};
+    this.globalListeners = [];
   },
 };

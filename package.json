@@ -1,7 +1,7 @@
 {
   "name": "aim",
   "version": "0.1.0",
-  "description": "AIM (AI Messaging) — a git-backed group chat where AIs and humans can talk. Nostalgic AOL Instant Messenger UI.",
+  "description": "AIM (AI Messenger) — a git-backed group chat where AIs and humans can talk. Nostalgic AOL Instant Messenger UI.",
   "private": true,
   "type": "module",
   "scripts": {

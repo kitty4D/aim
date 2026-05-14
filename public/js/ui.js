@@ -3,8 +3,11 @@
 import { Client } from "./client.js";
 import { Sounds } from "./sounds.js";
 import { Realtime } from "./realtime.js";
+import { Presence } from "./presence.js";
 
 const USER_COLORS = ["--user-1","--user-2","--user-3","--user-4","--user-5","--user-6","--user-7","--user-8"];
+const STATUS_LABELS = { available: "Available", away: "Away", invisible: "Invisible" };
+const STATUS_COLORS = { available: "#2ecc40", away: "#f1c40f", invisible: "#888" };
 
 const state = {
   me: null,
@@ -14,6 +17,7 @@ const state = {
   activeRoom: null,
   openRooms: new Set(),
   roomState: {},
+  online: [],
 };
 
 function $(sel, root = document) { return root.querySelector(sel); }
@@ -69,6 +73,8 @@ export async function bootChat() {
   renderBuddyList();
   renderEmptyChat();
   Sounds.signon();
+  await Presence.start();
+  renderStatusPill();
   await startRealtime();
   setupComposeHandlers();
   setupToolbar();
@@ -78,6 +84,10 @@ async function startRealtime() {
   for (const room of state.rooms) {
     Realtime.subscribe(room, () => refreshRoom(room));
   }
+  Realtime.subscribeGlobal((pulse) => {
+    state.online = pulse.online || [];
+    renderOnlineList();
+  });
   await Realtime.init(state.me.realtime);
 }
 
@@ -100,6 +110,43 @@ function renderBuddyList() {
     li.addEventListener("click", () => openRoom(room));
     roomList.appendChild(li);
   }
+  renderOnlineList();
+}
+
+function renderOnlineList() {
+  const list = $("#onlineList");
+  if (!list) return;
+  const myName = state.me?.name;
+  const others = state.online
+    .filter((u) => u.name !== myName)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const total = others.length;
+  const header = $("#onlineHeader");
+  if (header) header.textContent = `Online Buddies (${total})`;
+
+  list.innerHTML = "";
+  if (total === 0) {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="help" style="font-style:italic">no one else is online</span>`;
+    list.appendChild(li);
+    return;
+  }
+  for (const u of others) {
+    const li = document.createElement("li");
+    const color = STATUS_COLORS[u.status] || "#888";
+    li.innerHTML = `<span class="dot" style="background:${color}"></span> ${escapeHtml(u.name)}`;
+    li.title = `${u.name} (${u.status})`;
+    list.appendChild(li);
+  }
+}
+
+function renderStatusPill() {
+  const pill = $("#statusPill");
+  if (!pill) return;
+  const label = pill.querySelector(".label");
+  const dot = pill.querySelector(".dot");
+  if (label) label.textContent = STATUS_LABELS[Presence.status] || "Available";
+  if (dot) dot.style.background = STATUS_COLORS[Presence.status] || STATUS_COLORS.available;
 }
 
 function renderEmptyChat() {
@@ -119,7 +166,13 @@ function openRoom(room) {
   state.activeRoom = room;
   state.openRooms.add(room);
   if (!state.roomState[room]) {
-    state.roomState[room] = { messages: [], lastSinceIso: null, pins: [], pinIndex: new Set() };
+    state.roomState[room] = {
+      messages: [],
+      lastSinceIso: null,
+      pins: [],
+      pinIndex: new Set(),
+      topic: null,
+    };
   }
   $$("#roomList li").forEach((li) =>
     li.classList.toggle("active", li.dataset.room === room),
@@ -134,6 +187,7 @@ function renderChatWindow() {
   if (!room) return renderEmptyChat();
   const body = $("#chatPane .window-body");
   body.innerHTML = `
+    <div class="topic-bar hidden" id="topicBar"></div>
     <div class="pin-bar hidden" id="pinBar"></div>
     <div class="transcript" id="transcript"></div>
     <div class="compose-toolbar">
@@ -160,7 +214,25 @@ function renderChatWindow() {
     }
   });
   $("#searchBtn").addEventListener("click", openSearchDialog);
+  renderTopicBar();
   renderTranscript();
+}
+
+function renderTopicBar() {
+  const room = state.activeRoom;
+  if (!room) return;
+  const bar = $("#topicBar");
+  if (!bar) return;
+  const topic = state.roomState[room]?.topic;
+  if (!topic) {
+    bar.classList.add("hidden");
+    bar.innerHTML = "";
+    return;
+  }
+  bar.classList.remove("hidden");
+  bar.innerHTML = `
+    <div class="topic-label">📋 Room topic</div>
+    <div class="topic-body">${escapeHtml(topic).replace(/\n/g, "<br>")}</div>`;
 }
 
 function renderTranscript() {
@@ -194,6 +266,14 @@ async function refreshRoom(room, { initial = false } = {}) {
     const opts = {};
     if (st.lastSinceIso) opts.since = st.lastSinceIso;
     const res = await Client.readRoom(room, opts);
+
+    if (typeof res.topic !== "undefined") {
+      if (st.topic !== res.topic) {
+        st.topic = res.topic;
+        if (room === state.activeRoom) renderTopicBar();
+      }
+    }
+
     const newMessages = res.messages || [];
     if (newMessages.length > 0) {
       const existingShas = new Set(st.messages.map((m) => m.sha + ":" + m.path));
@@ -284,9 +364,10 @@ function setupComposeHandlers() {
 }
 
 function setupToolbar() {
-  $("#signoffBtn").addEventListener("click", () => {
+  $("#signoffBtn").addEventListener("click", async () => {
     Sounds.signoff();
     Realtime.stop();
+    await Presence.stop();
     Client.clearToken();
     setTimeout(() => (location.href = "/"), 400);
   });
@@ -297,12 +378,10 @@ function setupToolbar() {
   $("#muteBtn").textContent = Sounds.isMuted() ? "🔇" : "🔊";
 
   $("#statusPill").addEventListener("click", () => {
-    const options = ["Available", "Away", "Invisible"];
-    const cur = $("#statusPill .label").textContent;
-    const next = options[(options.indexOf(cur) + 1) % options.length];
-    $("#statusPill .label").textContent = next;
-    const dot = $("#statusPill .dot");
-    dot.style.background = next === "Available" ? "#2ecc40" : next === "Away" ? "#f1c40f" : "#888";
+    const cycle = ["available", "away", "invisible"];
+    const next = cycle[(cycle.indexOf(Presence.status) + 1) % cycle.length];
+    Presence.setStatus(next);
+    renderStatusPill();
   });
 }
 

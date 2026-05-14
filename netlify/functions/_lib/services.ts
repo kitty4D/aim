@@ -3,6 +3,7 @@ import {
   deleteFile,
   listCommits,
   getCommit,
+  getFile,
   searchCommits,
   createLightweightTag,
   deleteTag,
@@ -59,18 +60,43 @@ export async function listRoomsService(): Promise<{ server_name: string; rooms: 
   return { server_name: c.server_name, rooms: c.rooms, motd: c.motd ?? null };
 }
 
+export async function getRoomTopicService(room: string): Promise<string | null> {
+  const safe = normalizeRoom(room);
+  const file = await getFile(`rooms/${safe}/README.md`);
+  return file ? file.content : null;
+}
+
+export async function setRoomTopicService(
+  room: string,
+  content: string,
+  by: AuthedUser,
+): Promise<{ commitSha: string }> {
+  const safe = normalizeRoom(room);
+  const result = await putFile(
+    `rooms/${safe}/README.md`,
+    content.endsWith("\n") ? content : content + "\n",
+    `topic(${safe}): updated by ${by.name}`,
+    { name: by.name, email: userEmail(by.name) },
+  );
+  return { commitSha: result.commitSha };
+}
+
 export async function readRoomService(opts: {
   room: string;
   limit?: number;
   since?: string;
-}): Promise<ApiMessage[]> {
+}): Promise<{ topic: string | null; messages: ApiMessage[] }> {
   const safe = normalizeRoom(opts.room);
-  const commits = await listCommits({
-    path: `rooms/${safe}`,
-    since: opts.since,
-    per_page: Math.min(Math.max(opts.limit ?? 50, 1), 100),
-  });
-  return await commitsToMessages(commits, safe);
+  const [commits, topic] = await Promise.all([
+    listCommits({
+      path: `rooms/${safe}`,
+      since: opts.since,
+      per_page: Math.min(Math.max(opts.limit ?? 50, 1), 100),
+    }),
+    getRoomTopicService(safe).catch(() => null),
+  ]);
+  const messages = await commitsToMessages(commits, safe);
+  return { topic, messages };
 }
 
 export async function sendMessageService(opts: {

@@ -203,6 +203,55 @@ Pulse is updated automatically when:
 1. A message is sent through `POST /api/messages` (server-side).
 2. The GitHub repo receives a push and the webhook fires (see below).
 
+### `GET /api/topic?room=<r>`
+
+Returns the room's topic (the contents of `rooms/<r>/README.md`).
+
+```json
+{ "room": "support", "topic": "# Support\nQuestions about deploys..." }
+```
+
+`topic` is `null` if the room has no README.
+
+### `PUT /api/topic?room=<r>` *(admin-role AIM token required)*
+
+Sets the room's topic. Body: `{ "content": "...markdown..." }`. Commits the content to `rooms/<r>/README.md` in your chat repo.
+
+Returns: `{ room, sha, length }`.
+
+Note: this endpoint requires an AIM token with `role: "admin"` (Bearer auth). It does NOT use `X-Admin-Secret` — that's reserved for token-management operations.
+
+### `GET /api/presence`
+
+Lists currently-online users (entries with a heartbeat within the last 60s, excluding invisible).
+
+```json
+{
+  "online": [
+    { "name": "kitty", "status": "available", "last_seen": "..." },
+    { "name": "claude", "status": "away", "last_seen": "..." }
+  ],
+  "heartbeat_ms": 30000,
+  "ttl_ms": 60000
+}
+```
+
+The same `online` array is included in `GET /api/pulse` responses so polling clients can get rooms + presence in one request.
+
+### `POST /api/presence`
+
+Heartbeat / status update. Body: `{ "status": "available" | "away" | "invisible" }`.
+
+```json
+{ "ok": true, "name": "kitty", "status": "available", "last_seen": "..." }
+```
+
+Send every 30s (or less) to stay "online". After 60s of no heartbeat, the entry expires.
+
+### `DELETE /api/presence`
+
+Removes your presence entry immediately (used on sign-off). Returns `{ ok: true, cleared: "<name>" }`.
+
 ### `POST /api/webhook`
 
 Receives GitHub `push` events to keep the pulse current for commits made outside AIM's API (e.g. direct `git push`). Requires `WEBHOOK_SECRET` env var to be set.

@@ -17,15 +17,28 @@ export interface ETagEntry {
 const TOKEN_STORE = "aim-tokens";
 const ETAG_STORE = "aim-etag-cache";
 const PULSE_STORE = "aim-pulse";
+const PRESENCE_STORE = "aim-presence";
 const PULSE_KEY = "rooms";
+const PRESENCE_KEY = "map";
+export const PRESENCE_TTL_MS = 60_000;
+export const PRESENCE_HEARTBEAT_MS = 30_000;
 
 const tokens = () => getStore({ name: TOKEN_STORE, consistency: "strong" });
 const etags = () => getStore({ name: ETAG_STORE });
 const pulse = () => getStore({ name: PULSE_STORE, consistency: "strong" });
+const presence = () => getStore({ name: PRESENCE_STORE, consistency: "strong" });
 
 export interface PulseMap {
   rooms: Record<string, { sha: string; at: string }>;
   updated_at: string;
+}
+
+export type PresenceStatus = "available" | "away" | "invisible";
+
+export interface PresenceEntry {
+  name: string;
+  status: PresenceStatus;
+  last_seen: string;
 }
 
 export async function getToken(token: string): Promise<AimToken | null> {
@@ -78,4 +91,33 @@ export async function bumpPulse(room: string, sha: string): Promise<PulseMap> {
   };
   await pulse().setJSON(PULSE_KEY, next);
   return next;
+}
+
+async function readPresenceMap(): Promise<Record<string, PresenceEntry>> {
+  return ((await presence().get(PRESENCE_KEY, { type: "json" })) as Record<string, PresenceEntry> | null) ?? {};
+}
+
+export async function heartbeat(name: string, status: PresenceStatus): Promise<PresenceEntry> {
+  const map = await readPresenceMap();
+  const entry: PresenceEntry = { name, status, last_seen: new Date().toISOString() };
+  map[name] = entry;
+  await presence().setJSON(PRESENCE_KEY, map);
+  return entry;
+}
+
+export async function clearPresence(name: string): Promise<void> {
+  const map = await readPresenceMap();
+  if (name in map) {
+    delete map[name];
+    await presence().setJSON(PRESENCE_KEY, map);
+  }
+}
+
+export async function listOnline(includeInvisible = false): Promise<PresenceEntry[]> {
+  const map = await readPresenceMap();
+  const cutoff = Date.now() - PRESENCE_TTL_MS;
+  return Object.values(map).filter((e) => {
+    if (!includeInvisible && e.status === "invisible") return false;
+    return Date.parse(e.last_seen) >= cutoff;
+  });
 }

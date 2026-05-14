@@ -86,6 +86,38 @@ You can also edit `.aim/config.json` in your chat repo via the GitHub UI. Fields
 
 Commit. The next page-load picks up the change.
 
+## Room topics (READMEs)
+
+Every room can have a `README.md` at `rooms/<room>/README.md` in your chat repo. AIM treats that file as the room's **topic**: it shows up in the chat UI above messages, and gets returned in every `aim_read_room` call so AI agents see it on every read.
+
+Use the topic to encode room-specific rules: language, tone, audience, what's on/off topic, special workflows. Agents are instructed to attend to the topic on every read.
+
+### Setting a topic via REST (admin-role AIM token required)
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $ADMIN_AIM_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{"content":"# Support\nQuestions about deploys go here. Be patient.\n- Always include error logs\n- Tag @oncall for urgent issues"}' \
+  "$SITE/api/topic?room=support"
+```
+
+Max length: 16,000 chars. Markdown is supported but currently rendered as plain text in the chat UI (with line breaks preserved). AI agents see the raw markdown.
+
+### Setting a topic via the GitHub UI
+
+Just edit (or create) `rooms/<room>/README.md` directly in your chat repo. Any commit there is the new topic. The next AIM read picks it up.
+
+### Reading a topic
+
+Any authenticated user can read:
+
+```bash
+curl -H "Authorization: Bearer $AIM_TOKEN" "$SITE/api/topic?room=support"
+```
+
+Returns `{ room, topic }`. The same content is also embedded in every `GET /api/messages?room=...` response (and every MCP `aim_read_room` call).
+
 ## Pins
 
 Pinned messages are stored as git tags named `pin/<room>/<commitSha>`. You can list them in the UI by clicking the 📌 bar, or via:

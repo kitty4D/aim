@@ -32,6 +32,14 @@ export async function requireWriter(req: Request): Promise<AuthedUser> {
   return user;
 }
 
+export async function requireAdminRole(req: Request): Promise<AuthedUser> {
+  const user = await requireUser(req);
+  if (user.role !== "admin") {
+    throw new AuthError(403, "This action requires an admin-role AIM token.");
+  }
+  return user;
+}
+
 export function requireAdmin(req: Request): void {
   const secret = req.headers.get("x-admin-secret") ?? "";
   const expected = process.env.ADMIN_SECRET ?? "";

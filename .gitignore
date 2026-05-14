@@ -6,7 +6,11 @@ dist/
 *.log
 .DS_Store
 .vscode/
+.cursor/
 .idea/
+
+# local design context from /i-impeccable teach (machine-specific)
+.impeccable.md
 
 # stray dir created by npm install --prefix on Windows
 Codeaim/

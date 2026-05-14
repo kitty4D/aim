@@ -121,6 +121,30 @@
 }
 .pin-bar:hover { background: #fff0a8; }
 
+.topic-bar {
+  background: #eef6ff;
+  border-bottom: 1px solid #6a9fcf;
+  padding: 4px 8px;
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  color: #1c3a5e;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.topic-bar .topic-label {
+  font-weight: bold;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4a6b8a;
+  margin-bottom: 2px;
+}
+.topic-bar .topic-body {
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .tabs {
   display: flex;
   gap: 2px;

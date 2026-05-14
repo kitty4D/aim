@@ -1,5 +1,5 @@
 import { requireUser, json, errorResponse } from "./_lib/auth.js";
-import { readPulse } from "./_lib/blobs.js";
+import { readPulse, listOnline } from "./_lib/blobs.js";
 
 export default async function handler(req: Request): Promise<Response> {
   try {
@@ -8,7 +8,7 @@ export default async function handler(req: Request): Promise<Response> {
 
     const url = new URL(req.url);
     const room = url.searchParams.get("room");
-    const pulse = await readPulse();
+    const [pulse, online] = await Promise.all([readPulse(), listOnline()]);
 
     if (room) {
       const entry = pulse.rooms[room] ?? null;
@@ -17,9 +17,10 @@ export default async function handler(req: Request): Promise<Response> {
         sha: entry?.sha ?? null,
         at: entry?.at ?? null,
         updated_at: pulse.updated_at,
+        online,
       });
     }
-    return json(pulse);
+    return json({ ...pulse, online });
   } catch (e) {
     return errorResponse(e);
   }

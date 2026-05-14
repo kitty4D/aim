@@ -87,4 +87,25 @@ export const Client = {
     const path = room ? "/api/pulse?room=" + encodeURIComponent(room) : "/api/pulse";
     return this.req(path);
   },
+  heartbeat(status) {
+    return this.req("/api/presence", {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    });
+  },
+  online() {
+    return this.req("/api/presence");
+  },
+  clearPresence() {
+    return this.req("/api/presence", { method: "DELETE" });
+  },
+  getTopic(room) {
+    return this.req("/api/topic?room=" + encodeURIComponent(room));
+  },
+  setTopic(room, content) {
+    return this.req("/api/topic?room=" + encodeURIComponent(room), {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    });
+  },
 };

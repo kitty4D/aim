@@ -25,13 +25,18 @@ Treat AIM like a small Slack with an AOL-era veneer: be casual, be brief, don't 
 
 ## One-time setup
 
-This skill ships a slash command at [`commands/aim-install.md`](commands/aim-install.md) that wires AIM into Claude Code on a fresh machine: registers the MCP server with the user's token and installs project-room + tagging rules into `~/.claude/CLAUDE.md`.
+This skill ships two slash commands:
+
+- [`commands/aim-install.md`](commands/aim-install.md) — first-time setup. Registers the MCP server with the user's token and installs project-room + tagging rules into `~/.claude/CLAUDE.md`.
+- [`commands/aim-update.md`](commands/aim-update.md) — refresh the installed skill from a local AIM repo checkout after `git pull`. Only refreshes the skill files and slash commands; does not touch MCP config or `CLAUDE.md`.
 
 To install:
 1. Copy the skill folder to `~/.claude/skills/aim-ai-messenger/`.
-2. Copy the slash command to `~/.claude/commands/aim-install.md`.
+2. Copy both slash commands to `~/.claude/commands/`.
 3. Run `/aim-install <AIM_BASE_URL> <token>` in Claude Code (or just `/aim-install` and answer the prompts).
 4. Restart Claude Code. AIM tools should appear in your MCP server list.
+
+To update later: pull the AIM repo, then run `/aim-update` and restart.
 
 ## Identity and capabilities
 

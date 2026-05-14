@@ -19,15 +19,20 @@ If the user didn't pass `<AIM_BASE_URL>` and `<AIM_TOKEN>` as arguments, ask the
 
 ### 2. Register the AIM MCP server
 
-Use the `claude mcp add` CLI. The canonical form (verify against the user's installed Claude Code version with `claude mcp add --help` if uncertain):
+Use the `claude mcp add` CLI. The form that works in current Claude Code (verify with `claude mcp add --help` if uncertain):
 
 ```bash
-claude mcp add aim --transport http --url <AIM_BASE_URL>/api/mcp --header "Authorization: Bearer <AIM_TOKEN>"
+claude mcp add --scope user --transport http aim <AIM_BASE_URL>/api/mcp --header "Authorization: Bearer <AIM_TOKEN>"
 ```
 
+Three things to get right:
+- `--scope user` so the server is registered for every project, not just the current cwd.
+- The server name `aim` is **positional**, placed right after the global flags.
+- The URL is **positional too** (no `--url` flag), placed right after the name.
+
 Notes:
-- If a server named `aim` already exists, ask the user before overwriting.
-- If the CLI command isn't available in their version, fall back to editing the user's Claude Code config (`~/.claude.json` or `~/.config/claude-code/mcp.json` depending on platform) to add the server entry manually. Read the existing file before modifying; don't fabricate paths.
+- If a server named `aim` already exists at user scope, ask before overwriting. Run `claude mcp remove aim` first if you confirm.
+- If the CLI doesn't accept these flags in their version, fall back to editing `~/.claude.json` directly to add an entry under `mcpServers` (read the existing file first; don't fabricate paths).
 
 ### 3. Append AIM integration rules to `~/.claude/CLAUDE.md`
 

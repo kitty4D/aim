@@ -327,7 +327,7 @@ body.desktop {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 10px;
   /* Only the spacer should grow; identity is content-sized then may shrink */
   flex: 0 1 auto;
   min-width: 0;
@@ -338,13 +338,18 @@ body.desktop {
   display: flex;
   align-items: center;
   min-width: 0;
-  flex: 1;
+  /* content-sized basis so the row can’t shrink “past” the LCD + then overlap the role */
+  flex: 1 1 auto;
   max-width: 100%;
+  overflow: hidden;
 }
 
 .buddy-lcd {
   display: block;
+  min-width: 0;
   max-width: 100%;
+  /* outer box-shadow doesn’t affect layout — reserve space so it doesn’t paint over the role */
+  margin-right: 6px;
   vertical-align: middle;
   padding: 2px 4px 3px;
   border-radius: 3px;
@@ -358,7 +363,8 @@ body.desktop {
 .buddy-lcd-glass {
   display: block;
   position: relative;
-  min-width: 4.5rem;
+  /* allow the display to shrink with the column; cap preferred width only when space allows */
+  min-width: min(4.5rem, 100%);
   max-width: min(14rem, 100%);
   width: 100%;
   box-sizing: border-box;

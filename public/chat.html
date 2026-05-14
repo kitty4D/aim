@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AIM — Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/favicon-180.png" />
+  <link rel="icon" type="image/svg+xml" href="/img/logo.svg" />
+  <link rel="stylesheet" href="https://unpkg.com/98.css" />
+  <link rel="stylesheet" href="/css/aim.css" />
+  <link rel="stylesheet" href="/css/chat.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Buddy List window -->
+    <div class="window buddy-list">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          <span id="serverName">AIM</span> — Buddy List
+        </div>
+        <div class="title-bar-controls">
+          <button aria-label="Minimize" disabled></button>
+          <button aria-label="Maximize" disabled></button>
+          <button id="signoffBtn" aria-label="Close" title="Sign off"></button>
+        </div>
+      </div>
+
+      <div class="motd hidden" id="motd"></div>
+
+      <div class="status-bar" style="background:#ece9d8;border-bottom:1px solid #888">
+        <span style="padding:2px 4px"><b id="meName">…</b> <span class="help">(<span id="meRole">…</span>)</span></span>
+        <span class="spacer" style="flex:1"></span>
+        <span id="statusPill" class="status-pill" title="Click to cycle">
+          <span class="dot" style="background:#2ecc40"></span>
+          <span class="label">Available</span>
+        </span>
+        <button id="muteBtn" style="margin-left:4px" title="Toggle sound">🔊</button>
+      </div>
+
+      <div class="window-body">
+        <div class="buddy-section" id="roomsSection">
+          <div class="buddy-section-header">Rooms (Online)</div>
+          <ul id="roomList"></ul>
+        </div>
+        <div class="buddy-section collapsed">
+          <div class="buddy-section-header">Offline Buddies</div>
+          <ul>
+            <li><span class="dot" style="background:#aaa"></span> nobody here yet…</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <p class="status-bar-field">AIM v0.1.0</p>
+        <p class="status-bar-field">Polling every 8s</p>
+      </div>
+    </div>
+
+    <!-- Chat pane -->
+    <div class="window chat-pane" id="chatPane">
+      <div class="title-bar">
+        <div class="title-bar-text">AIM</div>
+        <div class="title-bar-controls">
+          <button aria-label="Minimize" disabled></button>
+          <button aria-label="Maximize" disabled></button>
+          <button aria-label="Close" disabled></button>
+        </div>
+      </div>
+      <div class="window-body"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { bootChat } from "/js/ui.js";
+    document.querySelectorAll(".buddy-section-header").forEach((h) => {
+      h.addEventListener("click", () => h.parentElement.classList.toggle("collapsed"));
+    });
+    bootChat();
+  </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+/* AIM — base styles, Win95/98 chrome.
+   Builds on top of 98.css (loaded via CDN in HTML) but adds AIM-specific palette.
+*/
+
+:root {
+  --aim-yellow: #f2c94c;
+  --aim-yellow-dark: #d99e00;
+  --aim-blue: #0099cc;
+  --aim-blue-dark: #006a8e;
+  --aim-bg: #c0c7c8;
+  --aim-window-bg: #d4d0c8;
+  --aim-text: #000;
+  --aim-link: #0000ee;
+
+  /* Per-user message colors (rotated by hash) */
+  --user-1: #c00;
+  --user-2: #008;
+  --user-3: #060;
+  --user-4: #a06;
+  --user-5: #806;
+  --user-6: #840;
+  --user-7: #066;
+  --user-8: #444;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--aim-bg);
+  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  color: var(--aim-text);
+  overflow: hidden;
+}
+
+/* Desktop wallpaper feel */
+body.desktop {
+  background:
+    radial-gradient(ellipse at center, #5a8fa8 0%, #2c5f78 100%);
+  display: grid;
+  place-items: center;
+}
+
+/* Sign-on screen logo block */
+.aim-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.aim-brand img {
+  width: 64px;
+  height: auto;
+}
+.aim-brand h1 {
+  margin: 0;
+  font-size: 28px;
+  font-family: "Impact", "Arial Black", sans-serif;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--aim-yellow-dark);
+  text-shadow: 1px 1px 0 #000, 2px 2px 0 rgba(0,0,0,0.3);
+}
+.aim-brand .tagline {
+  font-size: 10px;
+  color: #555;
+  margin-top: 2px;
+}
+
+/* Sign-on window sizing */
+.signon-window {
+  width: 340px;
+}
+.signon-window .field-row {
+  margin: 6px 0;
+}
+.signon-window .links {
+  font-size: 11px;
+  text-align: center;
+  margin-top: 8px;
+}
+.signon-window a {
+  color: var(--aim-link);
+  text-decoration: underline;
+}
+
+/* Chat layout: Buddy list left, chat windows right */
+.app {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 8px;
+  padding: 8px;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.buddy-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.buddy-list .window-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+  background: #fff;
+}
+.buddy-list .status-bar {
+  font-size: 10px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.buddy-section {
+  margin-bottom: 6px;
+}
+.buddy-section-header {
+  background: var(--aim-yellow);
+  border: 1px solid var(--aim-yellow-dark);
+  padding: 1px 4px;
+  font-weight: bold;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+}
+.buddy-section-header::before {
+  content: "▼ ";
+  font-size: 9px;
+}
+.buddy-section.collapsed .buddy-section-header::before { content: "▶ "; }
+.buddy-section.collapsed ul { display: none; }
+
+.buddy-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 4px;
+}
+.buddy-list li {
+  padding: 1px 4px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.buddy-list li:hover {
+  background: #d8e6f6;
+}
+.buddy-list li.active {
+  background: #316ac5;
+  color: #fff;
+}
+.buddy-list li .dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #2ecc40;
+  flex: none;
+}
+
+/* Status menu */
+.status-pill {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  background: #eee;
+  border: 1px inset #888;
+  padding: 1px 6px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.status-pill .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+
+/* Chat window */
+.chat-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.chat-pane .window-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  min-height: 0;
+}
+.chat-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: #555;
+  font-style: italic;
+  background: #fff;
+}
+.chat-empty .aim-brand img { width: 48px; height: auto; }
+
+/* Modal overlay (for token-mint, etc.) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+}
+
+/* Form helpers */
+.field-row label { min-width: 90px; display: inline-block; }
+.field-row input[type=text], .field-row input[type=password] {
+  width: 200px;
+}
+.actions { display: flex; gap: 6px; justify-content: flex-end; padding-top: 4px; }
+
+/* Help text */
+.help { font-size: 10px; color: #555; }
+
+/* Utility */
+.hidden { display: none !important; }
+.spacer { flex: 1; }
+
+/* Marquee for MOTD */
+.motd {
+  font-style: italic;
+  font-size: 10px;
+  color: #555;
+  text-align: center;
+  padding: 2px;
+  border-bottom: 1px solid #aaa;
+  background: #ffeecc;
+}

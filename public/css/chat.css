@@ -1,0 +1,161 @@
+/* AIM — chat window styling */
+
+.transcript {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+  padding: 4px 8px;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 13px;
+  line-height: 1.35;
+  border-top: 2px solid #808080;
+  border-bottom: 2px solid #808080;
+}
+
+.transcript .msg {
+  margin: 2px 0;
+  word-wrap: break-word;
+}
+.transcript .author {
+  font-weight: bold;
+  margin-right: 4px;
+}
+.transcript .author::after { content: ":"; }
+.transcript .ts {
+  color: #888;
+  font-size: 10px;
+  margin-left: 6px;
+  font-family: Tahoma, Arial, sans-serif;
+}
+.transcript .edited {
+  color: #888;
+  font-size: 10px;
+  margin-left: 4px;
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+.transcript .system-msg {
+  color: #888;
+  font-style: italic;
+  text-align: center;
+  font-size: 11px;
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+.transcript .mention {
+  background: #fff7c0;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.transcript .own .author {
+  /* keep author color, slight bg highlight on own messages */
+}
+
+.compose-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--aim-window-bg);
+  padding: 2px 4px;
+  border-bottom: 1px solid #808080;
+}
+.compose-toolbar button {
+  min-width: 22px;
+  height: 22px;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 0 4px;
+}
+.compose-toolbar .sep {
+  width: 1px;
+  height: 18px;
+  background: #888;
+  margin: 0 4px;
+}
+
+.compose {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--aim-window-bg);
+}
+.compose textarea {
+  flex: 1;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 13px;
+  resize: none;
+  height: 48px;
+  padding: 3px;
+}
+.compose button {
+  min-width: 64px;
+  font-weight: bold;
+  background: linear-gradient(to bottom, #fff5b8 0%, var(--aim-yellow) 50%, var(--aim-yellow-dark) 100%);
+  border: 2px outset var(--aim-yellow-dark);
+}
+.compose button:active {
+  border-style: inset;
+}
+
+.chat-titlebar-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 10px;
+}
+.chat-titlebar-actions button {
+  min-width: 20px;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 16px;
+  height: 18px;
+}
+
+.pin-bar {
+  background: #fff8dc;
+  border-bottom: 1px solid #d99e00;
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.pin-bar:hover { background: #fff0a8; }
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--aim-window-bg);
+  padding: 2px 2px 0 2px;
+  border-bottom: 1px solid #808080;
+}
+.tab {
+  background: #c0c0c0;
+  border: 1px outset #fff;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  user-select: none;
+}
+.tab.active {
+  background: #fff;
+  border-bottom: 1px solid #fff;
+  position: relative;
+  top: 1px;
+  font-weight: bold;
+}
+.tab .close {
+  margin-left: 4px;
+  color: #555;
+  font-weight: bold;
+}
+.tab .close:hover { color: #c00; }
+
+/* Reaction-ish pin star */
+.msg .star {
+  font-size: 10px;
+  margin-left: 4px;
+  cursor: pointer;
+  opacity: 0.4;
+}
+.msg:hover .star { opacity: 0.8; }
+.msg .star.pinned { opacity: 1; color: var(--aim-yellow-dark); }

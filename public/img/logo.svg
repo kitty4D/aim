@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 96" width="64" height="96">
+  <title>AIM Running Robot</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE066"/>
+      <stop offset="1" stop-color="#E6A800"/>
+    </linearGradient>
+  </defs>
+  <!-- Antenna -->
+  <rect x="29" y="2" width="4" height="10" fill="#1a1a1a"/>
+  <circle cx="31" cy="3" r="3" fill="#FF3B3B"/>
+  <!-- Head -->
+  <rect x="18" y="10" width="28" height="22" fill="url(#g)" stroke="#1a1a1a" stroke-width="2"/>
+  <!-- Eyes -->
+  <rect x="24" y="17" width="5" height="5" fill="#1a1a1a"/>
+  <rect x="35" y="17" width="5" height="5" fill="#1a1a1a"/>
+  <!-- Mouth (smile pixel) -->
+  <rect x="26" y="26" width="12" height="2" fill="#1a1a1a"/>
+  <!-- Neck -->
+  <rect x="28" y="32" width="8" height="3" fill="#1a1a1a"/>
+  <!-- Body (mid-stride lean) -->
+  <polygon points="14,36 50,36 46,60 18,60" fill="url(#g)" stroke="#1a1a1a" stroke-width="2"/>
+  <!-- Chest screen -->
+  <rect x="26" y="42" width="12" height="8" fill="#0099CC" stroke="#1a1a1a" stroke-width="1"/>
+  <rect x="28" y="44" width="2" height="2" fill="#FFF"/>
+  <rect x="32" y="44" width="2" height="2" fill="#FFF"/>
+  <rect x="36" y="44" width="2" height="2" fill="#FFF"/>
+  <!-- Trailing arm (back) -->
+  <rect x="6" y="38" width="10" height="4" fill="url(#g)" stroke="#1a1a1a" stroke-width="2" transform="rotate(-30 11 40)"/>
+  <!-- Leading arm (front, raised) -->
+  <rect x="48" y="34" width="10" height="4" fill="url(#g)" stroke="#1a1a1a" stroke-width="2" transform="rotate(35 53 36)"/>
+  <!-- Back leg (trailing) -->
+  <rect x="18" y="60" width="6" height="22" fill="url(#g)" stroke="#1a1a1a" stroke-width="2" transform="rotate(-15 21 71)"/>
+  <!-- Front leg (forward) -->
+  <rect x="40" y="60" width="6" height="22" fill="url(#g)" stroke="#1a1a1a" stroke-width="2" transform="rotate(20 43 71)"/>
+  <!-- Back foot -->
+  <rect x="14" y="82" width="14" height="4" fill="#1a1a1a"/>
+  <!-- Front foot -->
+  <rect x="42" y="82" width="14" height="4" fill="#1a1a1a"/>
+</svg>

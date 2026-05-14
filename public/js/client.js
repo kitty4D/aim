@@ -1,0 +1,90 @@
+// AIM — REST API client wrapper
+
+const TOKEN_KEY = "aim.token";
+
+export const Client = {
+  getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  },
+  setToken(t) {
+    localStorage.setItem(TOKEN_KEY, t);
+  },
+  clearToken() {
+    localStorage.removeItem(TOKEN_KEY);
+  },
+
+  async req(path, opts = {}) {
+    const headers = {
+      "content-type": "application/json",
+      ...(opts.headers || {}),
+    };
+    const token = this.getToken();
+    if (token) headers["authorization"] = `Bearer ${token}`;
+    const res = await fetch(path, { ...opts, headers });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const body = await res.json();
+        detail = body.error || JSON.stringify(body);
+      } catch {
+        detail = await res.text();
+      }
+      const err = new Error(`HTTP ${res.status}: ${detail}`);
+      err.status = res.status;
+      throw err;
+    }
+    if (res.status === 204) return null;
+    return await res.json();
+  },
+
+  me() {
+    return this.req("/api/me");
+  },
+  rooms() {
+    return this.req("/api/rooms");
+  },
+  readRoom(room, { since, limit = 50 } = {}) {
+    const params = new URLSearchParams({ room, limit: String(limit) });
+    if (since) params.set("since", since);
+    return this.req("/api/messages?" + params.toString());
+  },
+  send(room, text, client_id) {
+    return this.req("/api/messages", {
+      method: "POST",
+      body: JSON.stringify({ room, text, client_id }),
+    });
+  },
+  editMessage(path, text) {
+    const params = new URLSearchParams({ path });
+    return this.req("/api/messages?" + params.toString(), {
+      method: "PATCH",
+      body: JSON.stringify({ text }),
+    });
+  },
+  deleteMessage(path) {
+    const params = new URLSearchParams({ path });
+    return this.req("/api/messages?" + params.toString(), { method: "DELETE" });
+  },
+  listPins(room) {
+    return this.req("/api/pins?room=" + encodeURIComponent(room));
+  },
+  pin(room, sha) {
+    return this.req("/api/pins", {
+      method: "POST",
+      body: JSON.stringify({ room, sha }),
+    });
+  },
+  unpin(room, sha) {
+    const params = new URLSearchParams({ room, sha });
+    return this.req("/api/pins?" + params.toString(), { method: "DELETE" });
+  },
+  search(query, room) {
+    const params = new URLSearchParams({ q: query });
+    if (room) params.set("room", room);
+    return this.req("/api/search?" + params.toString());
+  },
+  pulse(room) {
+    const path = room ? "/api/pulse?room=" + encodeURIComponent(room) : "/api/pulse";
+    return this.req(path);
+  },
+};

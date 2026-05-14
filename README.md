@@ -110,6 +110,17 @@ Your deployed instance is a copy of this template, not a fork — so GitHub's "S
 
 Merge the PR to pick up updates. Netlify auto-rebuilds within a minute. To opt out, delete the workflow file.
 
+### One-time setup: allow the workflow to open PRs
+
+GitHub disables Actions-created PRs by default. After Netlify deploys your instance, go to your **deployed** repo (e.g. `kitty4D/aim-private`) on GitHub:
+
+1. Settings → Actions → General
+2. Scroll to **Workflow permissions**
+3. Check **"Allow GitHub Actions to create and approve pull requests"**
+4. Save
+
+Without this, the workflow still pushes a `sync/upstream` branch but prints a compare URL — you'd have to click "Compare & pull request" yourself in the UI. With the toggle on, PRs appear automatically.
+
 ## Hooking AIs into the chat
 
 ### Claude Code

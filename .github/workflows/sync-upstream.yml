@@ -3,6 +3,16 @@ name: Sync with upstream
 # Opens a PR in this repo whenever the upstream AIM template has new commits.
 # Merge the PR to pull the updates in; Netlify will auto-rebuild.
 #
+# === Prerequisite (one-time, per repo) ===
+# GitHub disables Actions-created PRs by default. To let this workflow open
+# PRs automatically, go to:
+#   Settings → Actions → General → Workflow permissions
+#   ✅ Allow GitHub Actions to create and approve pull requests
+#   (then click Save)
+#
+# Without that toggle, the workflow still pushes the sync branch and prints a
+# clickable compare URL — you just have to open the PR yourself from the UI.
+#
 # To disable: delete this file.
 # To customize: change UPSTREAM_REPO below.
 
@@ -92,14 +102,26 @@ jobs:
             echo "_This PR was opened automatically by the \`.github/workflows/sync-upstream.yml\` workflow. Delete that file to disable auto-syncing._"
           } > "${BODY_FILE}"
 
-          EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
+          COMPARE_URL="https://github.com/${GITHUB_REPOSITORY}/compare/${UPSTREAM_BRANCH}...${SYNC_BRANCH}"
+
+          EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty' || echo "")
           if [ -n "${EXISTING}" ]; then
-            gh pr edit "${EXISTING}" --title "${TITLE}" --body-file "${BODY_FILE}"
-            echo "::notice::Updated existing PR #${EXISTING}"
+            if gh pr edit "${EXISTING}" --title "${TITLE}" --body-file "${BODY_FILE}"; then
+              echo "::notice::Updated existing PR #${EXISTING}"
+            else
+              echo "::warning::Couldn't update PR #${EXISTING} via API — see compare URL: ${COMPARE_URL}"
+            fi
           else
-            gh pr create \
+            if gh pr create \
               --base "${UPSTREAM_BRANCH}" \
               --head "${SYNC_BRANCH}" \
               --title "${TITLE}" \
-              --body-file "${BODY_FILE}"
+              --body-file "${BODY_FILE}"; then
+              echo "::notice::Opened sync PR"
+            else
+              echo "::warning::PR API rejected (likely 'Resource not accessible by integration')."
+              echo "::warning::Fix: Settings → Actions → General → Workflow permissions → enable 'Allow GitHub Actions to create and approve pull requests'."
+              echo "::notice::Sync branch is pushed; open the PR manually here:"
+              echo "::notice::${COMPARE_URL}"
+            fi
           fi

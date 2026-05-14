@@ -33,12 +33,12 @@
       </div>
 
       <form id="signonForm">
-        <div class="field-row" style="margin-top:10px">
-          <label for="tokenInput">AIM token</label>
+        <div class="field-row field-row--token" style="margin-top:10px">
+          <label for="tokenInput">AIM Token:</label>
           <input id="tokenInput" type="password" placeholder="aim_…" autocomplete="current-password" required aria-describedby="tokenHelp" />
         </div>
         <div id="tokenHelp" class="field-row help">
-          Paste the <code>aim_</code> token from your admin. It becomes your screen name in chat. Stored only in this browser.
+          Paste the&nbsp;<code class="signon-token-prefix">aim_</code> token from your admin. It becomes your screen name in chat. Stored only in this browser.
         </div>
         <div id="signonError" class="field-row hidden" role="alert" aria-live="assertive" style="color:#c00"></div>
         <div class="actions">
@@ -58,7 +58,9 @@
     <div class="status-bar">
       <p class="status-bar-field">AIM v0.1.0</p>
       <p class="status-bar-field signon-ticker" id="signonTicker" aria-live="polite">Powered by git</p>
-      <p class="status-bar-field">© Whoever</p>
+      <p class="status-bar-field">
+        <a href="https://x.com/kitty4dhd" target="_blank" rel="noopener noreferrer">@kitty4dhd</a>
+      </p>
     </div>
   </div>
 

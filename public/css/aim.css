@@ -168,10 +168,37 @@ body.desktop {
 .signon-window .field-row {
   margin: 6px 0;
 }
+/* Token row: label hugs text; input grows to the right edge of the window body */
+.signon-window .field-row--token {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.signon-window .field-row--token label {
+  flex: 0 0 auto;
+  min-width: 0;
+  font-weight: 700;
+}
+.signon-window .field-row--token input[type="password"] {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  box-sizing: border-box;
+}
 .signon-window .links {
   font-size: 11px;
   text-align: center;
   margin-top: 8px;
+}
+.signon-window .field-row.help {
+  display: block;
+  line-height: 1.45;
+}
+.signon-window .field-row.help .signon-token-prefix {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  white-space: nowrap;
 }
 .field-row.help code {
   font-family: Consolas, "Courier New", monospace;

@@ -86,7 +86,11 @@ export async function bootChat() {
   }
 
   renderBuddyList();
-  renderEmptyChat();
+  if (state.rooms.includes("lobby")) {
+    openRoom("lobby");
+  } else {
+    renderEmptyChat();
+  }
   Sounds.signon();
   await Presence.start();
   renderStatusPill();
@@ -339,9 +343,11 @@ function buildMessageElement(m, st) {
       <span class="body">${highlightMentions(m.text)}</span>
       <span class="ts">${hhmm(m.sent_at)}</span>
       ${m.edited_at ? '<span class="edited">(edited)</span>' : ""}
-      <button type="button" class="reply-btn" data-sha="${String(m.sha)}" title="Reply in thread" aria-label="Reply in thread">↩</button>
-      <button type="button" class="star ${pinned}" data-sha="${String(m.sha)}" title="Pin or unpin this message" aria-label="Pin or unpin message" aria-pressed="${st.pinIndex.has(m.sha) ? "true" : "false"}">★</button>
-      <button type="button" class="react-btn" data-sha="${String(m.sha)}" title="Add reaction" aria-label="Add reaction">+😊</button>
+      <span class="msg-actions" role="group" aria-label="Message actions">
+        <button type="button" class="reply-btn" data-sha="${String(m.sha)}" title="Reply in thread" aria-label="Reply in thread"><span class="msg-action-glyph" aria-hidden="true">↩</span></button>
+        <button type="button" class="star ${pinned}" data-sha="${String(m.sha)}" title="Pin or unpin this message" aria-label="Pin or unpin message" aria-pressed="${st.pinIndex.has(m.sha) ? "true" : "false"}"><span class="msg-action-glyph" aria-hidden="true">★</span></button>
+        <button type="button" class="react-btn" data-sha="${String(m.sha)}" title="Add reaction" aria-label="Add reaction"><span class="msg-action-emoji" aria-hidden="true">😊</span></button>
+      </span>
       <button type="button" class="thread-badge${replyCount === 0 ? " hidden" : ""}" data-sha="${String(m.sha)}" title="Open thread" aria-label="Open thread">💬 <span class="thread-count">${replyCount}</span></button>
       <span class="reactions" data-sha="${String(m.sha)}">${renderReactionChipsHtml(m)}</span>`;
   return div;
@@ -532,7 +538,7 @@ function openReactionPicker(anchorBtn) {
   // dismiss on outside click
   setTimeout(() => {
     document.addEventListener("click", function dismissPicker(ev) {
-      if (!picker.contains(ev.target) && ev.target !== anchorBtn) {
+      if (!picker.contains(ev.target) && !anchorBtn.contains(ev.target)) {
         close();
         document.removeEventListener("click", dismissPicker);
       }

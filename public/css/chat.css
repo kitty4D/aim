@@ -189,50 +189,83 @@
 }
 .tab .close:hover { color: #c00; }
 
-/* Pin control — real button for keyboard / touch */
-.msg button.star {
-  border: none;
-  background: transparent;
-  padding: 0 2px;
+/* Per-message actions: tight Win98 chrome, bold glyphs; emoji uses color font stack */
+.msg .msg-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   margin-left: 4px;
-  font: inherit;
-  font-size: 10px;
-  line-height: 1.2;
-  cursor: pointer;
-  opacity: 0.4;
-  color: inherit;
+  vertical-align: middle;
 }
-.msg button.star::-moz-focus-inner {
+.msg .msg-actions button {
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 2px outset #c0c0c0;
+  background: linear-gradient(180deg, #f7f5ef 0%, #dcd8cc 55%, #c8c4b8 100%);
+  cursor: pointer;
+  vertical-align: middle;
+  opacity: 0.45;
+  color: #1a1a1a;
+  font-weight: bold;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.msg .msg-actions button::-moz-focus-inner {
   border: 0;
   padding: 0;
 }
-.msg:hover button.star { opacity: 0.8; }
-.msg button.star.pinned { opacity: 1; color: var(--aim-yellow-dark); }
-.msg button.star:focus-visible {
+.msg .msg-actions button:active {
+  border-style: inset;
+  padding-top: 1px;
+  padding-left: 1px;
+}
+.msg:hover .msg-actions button {
+  opacity: 0.95;
+}
+.msg .msg-actions button:hover {
+  background: linear-gradient(180deg, #fff 0%, #ece9d8 50%, #d4d0c4 100%);
+}
+.msg .msg-actions .msg-action-glyph {
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+}
+.msg .msg-actions .msg-action-emoji {
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1;
+  display: block;
+}
+.msg .msg-actions button.star.pinned {
+  opacity: 1;
+  color: #5a3d00;
+  background: linear-gradient(180deg, #fff8dc 0%, #f0e68c 55%, #d4af37 100%);
+  border-color: #b8860b;
+}
+.msg .msg-actions button:focus-visible {
   outline: 2px solid var(--aim-blue-dark);
   outline-offset: 1px;
 }
 
 /* ---------- Thread UI ---------- */
 
-.msg .reply-btn,
 .msg .thread-badge {
   font-size: 10px;
   margin-left: 4px;
   border: 1px outset #c0c0c0;
-  background: #ece9d8;
   padding: 1px 5px;
   cursor: pointer;
   font-family: Tahoma, Arial, sans-serif;
   vertical-align: middle;
-}
-.msg .reply-btn {
-  opacity: 0.4;
-}
-.msg:hover .reply-btn { opacity: 0.9; }
-.msg .reply-btn:hover { background: #fff; }
-
-.msg .thread-badge {
   opacity: 0.85;
   background: #fff8dc;
   border-color: #d99e00;
@@ -292,20 +325,6 @@
 
 /* ---------- Reactions ---------- */
 
-.msg .react-btn {
-  font-size: 10px;
-  margin-left: 4px;
-  border: 1px outset #c0c0c0;
-  background: #ece9d8;
-  padding: 1px 5px;
-  cursor: pointer;
-  font-family: Tahoma, Arial, sans-serif;
-  vertical-align: middle;
-  opacity: 0.4;
-}
-.msg:hover .react-btn { opacity: 0.9; }
-.msg .react-btn:hover { background: #fff; }
-
 .msg .reactions {
   display: inline-flex;
   flex-wrap: wrap;
@@ -319,7 +338,7 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla", Tahoma, Arial, sans-serif;
   font-size: 11px;
   background: #f0f0f0;
   border: 1px solid #aaa;
@@ -352,6 +371,7 @@
   font-family: Tahoma, Arial, sans-serif;
 }
 .reaction-picker button.reaction-pick {
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
   font-size: 16px;
   border: 1px outset #c0c0c0;
   background: #ece9d8;

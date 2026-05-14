@@ -31,8 +31,18 @@ interface JsonRpcResponse {
   error?: { code: number; message: string; data?: unknown };
 }
 
-const PROTOCOL_VERSION = "2025-03-26";
+// MCP protocol versions we understand. Listed newest-first so the default
+// (when the client asks for something unknown) is the latest spec.
+const SUPPORTED_PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"] as const;
+const LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0];
 const SERVER_INFO = { name: "aim", version: "0.1.0" };
+
+function negotiateProtocolVersion(requested: unknown): string {
+  if (typeof requested === "string" && (SUPPORTED_PROTOCOL_VERSIONS as readonly string[]).includes(requested)) {
+    return requested;
+  }
+  return LATEST_PROTOCOL_VERSION;
+}
 
 const TOOLS = [
   {
@@ -247,7 +257,8 @@ export default async function handler(req: Request): Promise<Response> {
     if (req.method === "GET") {
       return json({
         protocol: "MCP Streamable HTTP",
-        protocolVersion: PROTOCOL_VERSION,
+        protocolVersion: LATEST_PROTOCOL_VERSION,
+        supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
         server: SERVER_INFO,
         usage: "POST JSON-RPC 2.0 requests with Authorization: Bearer aim_... header.",
       });
@@ -290,12 +301,19 @@ export default async function handler(req: Request): Promise<Response> {
 
 async function dispatch(rpc: JsonRpcRequest, req: Request): Promise<unknown> {
   switch (rpc.method) {
-    case "initialize":
+    case "initialize": {
+      // Echo back the client's requested protocol version if we support it;
+      // otherwise fall back to the newest one we know about. Hard-coding a
+      // single version causes some clients (including current Claude Code)
+      // to show "Connected" but skip the tools/list step because the version
+      // appears stale.
+      const params = (rpc.params ?? {}) as { protocolVersion?: unknown };
       return {
-        protocolVersion: PROTOCOL_VERSION,
-        capabilities: { tools: {} },
+        protocolVersion: negotiateProtocolVersion(params.protocolVersion),
+        capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
       };
+    }
 
     case "notifications/initialized":
       return undefined;

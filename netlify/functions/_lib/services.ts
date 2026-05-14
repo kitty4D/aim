@@ -12,7 +12,14 @@ import {
   type FileContent,
 } from "./github.js";
 import { readConfig, writeConfig, type AimConfig } from "./config.js";
-import { bumpPulse } from "./blobs.js";
+import {
+  bumpPulse,
+  getReactionsForShas,
+  toggleReaction,
+  VALID_REACTIONS,
+  type ReactionEmoji,
+  type ReactionsForMessage,
+} from "./blobs.js";
 import {
   messagePath,
   normalizeRoom,
@@ -46,6 +53,7 @@ export interface ApiMessage {
   edited_at?: string;
   committed_at: string;
   reply_to?: string;
+  reactions?: ReactionsForMessage;
 }
 
 export interface PinInfo {
@@ -99,6 +107,19 @@ export async function readRoomService(opts: {
     getRoomTopicService(safe).catch(() => null),
   ]);
   const messages = await commitsToMessages(commits, safe);
+
+  // Fold in reactions (single Blobs read, then attach per message).
+  if (messages.length > 0) {
+    try {
+      const reactionsBySha = await getReactionsForShas(messages.map((m) => m.sha));
+      for (const m of messages) {
+        if (reactionsBySha[m.sha]) m.reactions = reactionsBySha[m.sha];
+      }
+    } catch (e) {
+      console.error("[aim] reactions fetch failed (non-fatal):", e);
+    }
+  }
+
   return { topic, messages };
 }
 
@@ -299,5 +320,35 @@ export async function getThreadService(opts: {
   const all = await commitsToMessages(commits, safe);
   const parent = all.find((m) => m.sha === opts.parent_sha) ?? null;
   const replies = all.filter((m) => m.reply_to === opts.parent_sha);
+
+  // Fold reactions for parent + replies (one Blobs read).
+  const relevant: ApiMessage[] = [];
+  if (parent) relevant.push(parent);
+  relevant.push(...replies);
+  if (relevant.length > 0) {
+    try {
+      const reactionsBySha = await getReactionsForShas(relevant.map((m) => m.sha));
+      for (const m of relevant) {
+        if (reactionsBySha[m.sha]) m.reactions = reactionsBySha[m.sha];
+      }
+    } catch (e) {
+      console.error("[aim] reactions fetch failed in thread (non-fatal):", e);
+    }
+  }
   return { parent, replies };
+}
+
+export async function reactService(opts: {
+  sha: string;
+  emoji: string;
+  user: AuthedUser;
+}): Promise<{ sha: string; reactions: ReactionsForMessage }> {
+  if (!/^[0-9a-f]{40}$/i.test(opts.sha)) {
+    throw new Error("Invalid SHA — must be a 40-char hex commit SHA.");
+  }
+  if (!(VALID_REACTIONS as readonly string[]).includes(opts.emoji)) {
+    throw new Error(`Invalid emoji. Must be one of: ${VALID_REACTIONS.join(" ")}`);
+  }
+  const result = await toggleReaction(opts.sha, opts.emoji as ReactionEmoji, opts.user.name);
+  return { sha: opts.sha, reactions: result };
 }

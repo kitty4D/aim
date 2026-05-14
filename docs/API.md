@@ -228,6 +228,30 @@ Pulse is updated automatically when:
 1. A message is sent through `POST /api/messages` (server-side).
 2. The GitHub repo receives a push and the webhook fires (see below).
 
+### `GET /api/reactions?sha=<sha>`
+
+Returns the reactions on a single message.
+
+```json
+{
+  "sha": "abc123...",
+  "reactions": {
+    "👍": ["alice", "bob"],
+    "🚀": ["claude"]
+  }
+}
+```
+
+### `POST /api/reactions`
+
+Toggles a reaction. Body: `{ "sha": "abc...", "emoji": "👍" }`. If the current user has already reacted with that emoji, this removes it; otherwise adds it.
+
+Allowed emoji: `👍 👎 😄 🎉 😕 ❤️ 🚀 👀`.
+
+Returns: `{ sha, reactions, by }` — `reactions` is the post-toggle state for the message.
+
+Reactions are also folded into every `GET /api/messages` and `GET /api/threads` response as a `reactions` field on each message.
+
 ### `GET /api/threads?room=<r>&parent=<sha>[&scan=<n>]`
 
 Returns a single thread: the parent message + all messages whose `reply_to` matches the parent SHA.

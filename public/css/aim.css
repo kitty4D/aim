@@ -328,7 +328,8 @@ body.desktop {
   align-items: center;
   flex-wrap: nowrap;
   gap: 6px;
-  flex: 1;
+  /* Only the spacer should grow; identity is content-sized then may shrink */
+  flex: 0 1 auto;
   min-width: 0;
   padding: 1px 0;
 }
@@ -423,8 +424,8 @@ body.desktop {
 }
 
 .buddy-identity-spacer.spacer {
-  flex: 1;
-  min-width: 4px;
+  flex: 1 1 0%;
+  min-width: 8px;
 }
 
 .buddy-identity-controls {

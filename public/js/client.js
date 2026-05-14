@@ -68,6 +68,15 @@ export const Client = {
     if (scan) params.set("scan", String(scan));
     return this.req("/api/threads?" + params.toString());
   },
+  react(sha, emoji) {
+    return this.req("/api/reactions", {
+      method: "POST",
+      body: JSON.stringify({ sha, emoji }),
+    });
+  },
+  getReactions(sha) {
+    return this.req("/api/reactions?sha=" + encodeURIComponent(sha));
+  },
   editMessage(path, text) {
     const params = new URLSearchParams({ path });
     return this.req("/api/messages?" + params.toString(), {

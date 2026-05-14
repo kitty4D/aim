@@ -324,6 +324,8 @@ function renderTopicBar() {
     <div class="topic-body">${escapeHtml(topic).replace(/\n/g, "<br>")}</div>`;
 }
 
+const REACTION_EMOJI = ["👍","👎","😄","🎉","😕","❤️","🚀","👀"];
+
 function buildMessageElement(m, st) {
   const div = document.createElement("div");
   div.className = "msg";
@@ -339,8 +341,38 @@ function buildMessageElement(m, st) {
       ${m.edited_at ? '<span class="edited">(edited)</span>' : ""}
       <button type="button" class="reply-btn" data-sha="${String(m.sha)}" title="Reply in thread" aria-label="Reply in thread">↩</button>
       <button type="button" class="star ${pinned}" data-sha="${String(m.sha)}" title="Pin or unpin this message" aria-label="Pin or unpin message" aria-pressed="${st.pinIndex.has(m.sha) ? "true" : "false"}">★</button>
-      <button type="button" class="thread-badge${replyCount === 0 ? " hidden" : ""}" data-sha="${String(m.sha)}" title="Open thread" aria-label="Open thread">💬 <span class="thread-count">${replyCount}</span></button>`;
+      <button type="button" class="react-btn" data-sha="${String(m.sha)}" title="Add reaction" aria-label="Add reaction">+😊</button>
+      <button type="button" class="thread-badge${replyCount === 0 ? " hidden" : ""}" data-sha="${String(m.sha)}" title="Open thread" aria-label="Open thread">💬 <span class="thread-count">${replyCount}</span></button>
+      <span class="reactions" data-sha="${String(m.sha)}">${renderReactionChipsHtml(m)}</span>`;
   return div;
+}
+
+function renderReactionChipsHtml(m) {
+  const r = m.reactions || {};
+  const myName = state.me?.name;
+  const entries = Object.entries(r).filter(([, users]) => Array.isArray(users) && users.length > 0);
+  if (entries.length === 0) return "";
+  return entries.map(([emoji, users]) => {
+    const mine = users.includes(myName);
+    const safeUsers = users.map(escapeHtml).join(", ");
+    return `<button type="button" class="reaction-chip${mine ? " mine" : ""}" data-sha="${m.sha}" data-emoji="${escapeHtml(emoji)}" title="${safeUsers}" aria-pressed="${mine ? "true" : "false"}">${emoji} <span class="reaction-count">${users.length}</span></button>`;
+  }).join("");
+}
+
+function syncReactionsInTranscript() {
+  const t = $("#transcript");
+  if (!t) return;
+  const room = state.activeRoom;
+  const st = state.roomState[room];
+  if (!st) return;
+  const byShortKey = new Map(st.messages.map((m) => [m.sha, m]));
+  t.querySelectorAll(".reactions").forEach((el) => {
+    const sha = el.dataset.sha;
+    const m = byShortKey.get(sha);
+    if (!m) return;
+    const next = renderReactionChipsHtml(m);
+    if (el.innerHTML !== next) el.innerHTML = next;
+  });
 }
 
 function computeReplyCounts(messages) {
@@ -432,6 +464,7 @@ function renderTranscript(opts = {}) {
     }
     syncPinStarsInTranscript();
     syncThreadBadgesInTranscript();
+    syncReactionsInTranscript();
   }
   t.scrollTop = t.scrollHeight;
 }
@@ -455,6 +488,72 @@ function onTranscriptStarClick(e) {
     e.preventDefault();
     openThreadDialog(badge.dataset.sha);
     return;
+  }
+  const chip = e.target.closest(".reaction-chip");
+  if (chip && t.contains(chip)) {
+    e.preventDefault();
+    toggleReactionForSha(chip.dataset.sha, chip.dataset.emoji);
+    return;
+  }
+  const react = e.target.closest(".react-btn");
+  if (react && t.contains(react)) {
+    e.preventDefault();
+    openReactionPicker(react);
+    return;
+  }
+}
+
+function openReactionPicker(anchorBtn) {
+  // Close any existing picker
+  document.querySelectorAll(".reaction-picker").forEach((p) => p.remove());
+  const sha = anchorBtn.dataset.sha;
+  const picker = document.createElement("div");
+  picker.className = "reaction-picker";
+  picker.innerHTML = REACTION_EMOJI
+    .map((e) => `<button type="button" class="reaction-pick" data-emoji="${e}">${e}</button>`)
+    .join("");
+  document.body.appendChild(picker);
+
+  // Position above the button
+  const rect = anchorBtn.getBoundingClientRect();
+  picker.style.position = "absolute";
+  picker.style.top = `${window.scrollY + rect.top - picker.offsetHeight - 4}px`;
+  picker.style.left = `${window.scrollX + rect.left}px`;
+  // After insert into DOM, re-measure (offsetHeight is now correct)
+  picker.style.top = `${window.scrollY + rect.top - picker.offsetHeight - 4}px`;
+
+  const close = () => picker.remove();
+  picker.addEventListener("click", (e) => {
+    const pick = e.target.closest(".reaction-pick");
+    if (!pick) return;
+    toggleReactionForSha(sha, pick.dataset.emoji);
+    close();
+  });
+  // dismiss on outside click
+  setTimeout(() => {
+    document.addEventListener("click", function dismissPicker(ev) {
+      if (!picker.contains(ev.target) && ev.target !== anchorBtn) {
+        close();
+        document.removeEventListener("click", dismissPicker);
+      }
+    });
+  }, 0);
+}
+
+async function toggleReactionForSha(sha, emoji) {
+  if (!sha || !emoji) return;
+  try {
+    const res = await Client.react(sha, emoji);
+    // Update local state for the message
+    const room = state.activeRoom;
+    const st = state.roomState[room];
+    if (st) {
+      const msg = st.messages.find((m) => m.sha === sha);
+      if (msg) msg.reactions = res.reactions || {};
+      syncReactionsInTranscript();
+    }
+  } catch (e) {
+    alert("Reaction failed: " + e.message);
   }
 }
 

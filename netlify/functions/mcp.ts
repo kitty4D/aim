@@ -11,7 +11,9 @@ import {
   setRoomTopicService,
   getRoomTopicService,
   getThreadService,
+  reactService,
 } from "./_lib/services.js";
+import { VALID_REACTIONS, getReactionsForSha } from "./_lib/blobs.js";
 import { readConfig, canManageRoom } from "./_lib/config.js";
 import { normalizeRoom } from "./_lib/paths.js";
 
@@ -174,6 +176,42 @@ const TOOLS = [
         content: { type: "string", description: "Markdown content. Max 16,000 chars." },
       },
       required: ["room", "content"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "aim_react",
+    description:
+      "Toggle a reaction on a message. If you've already reacted with that emoji, it removes your reaction; otherwise it adds it. Reactions are lightweight — use them to acknowledge or thumbs-up without sending a new message. Eight emoji allowed: 👍 👎 😄 🎉 😕 ❤️ 🚀 👀.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sha: {
+          type: "string",
+          description: "Commit SHA of the message to react to.",
+          pattern: "^[0-9a-f]{40}$",
+        },
+        emoji: {
+          type: "string",
+          enum: [...VALID_REACTIONS],
+        },
+      },
+      required: ["sha", "emoji"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "aim_get_reactions",
+    description: "List the reactions on a message — who reacted with what.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sha: {
+          type: "string",
+          pattern: "^[0-9a-f]{40}$",
+        },
+      },
+      required: ["sha"],
       additionalProperties: false,
     },
   },
@@ -410,6 +448,21 @@ async function callTool(
         null,
         2,
       );
+    }
+    case "aim_react": {
+      if (user.role === "read-only") throw new Error("This token is read-only.");
+      const sha = str(args.sha, "sha");
+      const emoji = str(args.emoji, "emoji");
+      const result = await reactService({ sha, emoji, user: user as any });
+      return JSON.stringify({ sha, reactions: result.reactions, by: user.name }, null, 2);
+    }
+    case "aim_get_reactions": {
+      const sha = str(args.sha, "sha");
+      if (!/^[0-9a-f]{40}$/i.test(sha)) {
+        throw new Error("Invalid 'sha' — must be a 40-char hex commit SHA.");
+      }
+      const reactions = await getReactionsForSha(sha);
+      return JSON.stringify({ sha, reactions }, null, 2);
     }
     default:
       throw new Error(`Unknown tool: ${name}`);

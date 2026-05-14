@@ -18,15 +18,21 @@ const TOKEN_STORE = "aim-tokens";
 const ETAG_STORE = "aim-etag-cache";
 const PULSE_STORE = "aim-pulse";
 const PRESENCE_STORE = "aim-presence";
+const REACTIONS_STORE = "aim-reactions";
 const PULSE_KEY = "rooms";
 const PRESENCE_KEY = "map";
+const REACTIONS_KEY = "map";
 export const PRESENCE_TTL_MS = 60_000;
 export const PRESENCE_HEARTBEAT_MS = 30_000;
+
+export const VALID_REACTIONS = ["👍", "👎", "😄", "🎉", "😕", "❤️", "🚀", "👀"] as const;
+export type ReactionEmoji = typeof VALID_REACTIONS[number];
 
 const tokens = () => getStore({ name: TOKEN_STORE, consistency: "strong" });
 const etags = () => getStore({ name: ETAG_STORE });
 const pulse = () => getStore({ name: PULSE_STORE, consistency: "strong" });
 const presence = () => getStore({ name: PRESENCE_STORE, consistency: "strong" });
+const reactions = () => getStore({ name: REACTIONS_STORE, consistency: "strong" });
 
 export interface PulseMap {
   rooms: Record<string, { sha: string; at: string }>;
@@ -120,4 +126,58 @@ export async function listOnline(includeInvisible = false): Promise<PresenceEntr
     if (!includeInvisible && e.status === "invisible") return false;
     return Date.parse(e.last_seen) >= cutoff;
   });
+}
+
+// ---------- Reactions ----------
+// Stored entirely in Netlify Blobs (not git). Single map keyed by commit SHA.
+// Value shape: { "<sha>": { "👍": ["alice", "bob"], "🚀": ["claude"] } }
+
+export type ReactionsForMessage = Partial<Record<ReactionEmoji, string[]>>;
+export type ReactionsMap = Record<string, ReactionsForMessage>;
+
+async function readReactionsMap(): Promise<ReactionsMap> {
+  return ((await reactions().get(REACTIONS_KEY, { type: "json" })) as ReactionsMap | null) ?? {};
+}
+
+export async function getReactionsForSha(sha: string): Promise<ReactionsForMessage> {
+  const map = await readReactionsMap();
+  return map[sha] ?? {};
+}
+
+export async function getReactionsForShas(shas: string[]): Promise<Record<string, ReactionsForMessage>> {
+  if (shas.length === 0) return {};
+  const map = await readReactionsMap();
+  const out: Record<string, ReactionsForMessage> = {};
+  for (const sha of shas) {
+    if (map[sha]) out[sha] = map[sha];
+  }
+  return out;
+}
+
+/**
+ * Toggle a reaction. If the user is already in the list for that emoji, remove
+ * them; otherwise add them. Returns the resulting reactions for that message.
+ */
+export async function toggleReaction(sha: string, emoji: ReactionEmoji, user: string): Promise<ReactionsForMessage> {
+  const map = await readReactionsMap();
+  const entry: ReactionsForMessage = { ...(map[sha] ?? {}) };
+  const list = entry[emoji] ? [...entry[emoji]!] : [];
+  const idx = list.indexOf(user);
+  if (idx === -1) {
+    list.push(user);
+  } else {
+    list.splice(idx, 1);
+  }
+  if (list.length === 0) {
+    delete entry[emoji];
+  } else {
+    entry[emoji] = list;
+  }
+  if (Object.keys(entry).length === 0) {
+    delete map[sha];
+  } else {
+    map[sha] = entry;
+  }
+  await reactions().setJSON(REACTIONS_KEY, map);
+  return entry;
 }

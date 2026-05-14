@@ -1,0 +1,105 @@
+name: Sync with upstream
+
+# Opens a PR in this repo whenever the upstream AIM template has new commits.
+# Merge the PR to pull the updates in; Netlify will auto-rebuild.
+#
+# To disable: delete this file.
+# To customize: change UPSTREAM_REPO below.
+
+on:
+  schedule:
+    # Daily at 06:00 UTC. Adjust if you want a different cadence.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_REPO: kitty4D/aim
+  UPSTREAM_BRANCH: main
+  SYNC_BRANCH: sync/upstream
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote and fetch
+        run: |
+          git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
+          git fetch upstream "${UPSTREAM_BRANCH}"
+
+      - name: Compute divergence
+        id: diff
+        run: |
+          BEHIND=$(git rev-list --count HEAD.."upstream/${UPSTREAM_BRANCH}")
+          AHEAD=$(git rev-list --count "upstream/${UPSTREAM_BRANCH}"..HEAD)
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+          echo "Behind upstream by $BEHIND, ahead by $AHEAD."
+
+      - name: Already up to date — nothing to do
+        if: steps.diff.outputs.behind == '0'
+        run: echo "::notice::Already up to date with ${UPSTREAM_REPO}@${UPSTREAM_BRANCH}"
+
+      - name: Update sync branch from upstream
+        if: steps.diff.outputs.behind != '0'
+        run: |
+          git checkout -B "${SYNC_BRANCH}" "upstream/${UPSTREAM_BRANCH}"
+          git push origin "${SYNC_BRANCH}" --force
+
+      - name: Open or update sync PR
+        if: steps.diff.outputs.behind != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEHIND: ${{ steps.diff.outputs.behind }}
+          AHEAD: ${{ steps.diff.outputs.ahead }}
+        run: |
+          TITLE="Sync with upstream ${UPSTREAM_REPO} (${BEHIND} new commit(s))"
+
+          BODY_FILE="$(mktemp)"
+          {
+            echo "## 🔄 Upstream sync"
+            echo
+            echo "Your repo is **${BEHIND} commit(s) behind** [\`${UPSTREAM_REPO}@${UPSTREAM_BRANCH}\`](https://github.com/${UPSTREAM_REPO}/tree/${UPSTREAM_BRANCH})."
+            echo
+            if [ "${AHEAD}" != "0" ]; then
+              echo "> ⚠️ You also have **${AHEAD} local commit(s)** that aren't in upstream."
+              echo "> This sync branch is reset to the upstream state, so merging will overwrite those local commits with the upstream version. Review the diff carefully before merging."
+              echo
+            fi
+            echo "### What this PR does"
+            echo
+            echo "Brings your repo up to date with the latest [\`${UPSTREAM_REPO}\`](https://github.com/${UPSTREAM_REPO}) template."
+            echo
+            echo "### How to apply"
+            echo
+            echo "Use **Squash and merge** or **Create a merge commit** below. Netlify will auto-rebuild your site within ~1 minute."
+            echo
+            echo "---"
+            echo
+            echo "_This PR was opened automatically by the \`.github/workflows/sync-upstream.yml\` workflow. Delete that file to disable auto-syncing._"
+          } > "${BODY_FILE}"
+
+          EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
+          if [ -n "${EXISTING}" ]; then
+            gh pr edit "${EXISTING}" --title "${TITLE}" --body-file "${BODY_FILE}"
+            echo "::notice::Updated existing PR #${EXISTING}"
+          else
+            gh pr create \
+              --base "${UPSTREAM_BRANCH}" \
+              --head "${SYNC_BRANCH}" \
+              --title "${TITLE}" \
+              --body-file "${BODY_FILE}"
+          fi

@@ -100,6 +100,16 @@ Open `https://<YOUR_SITE>.netlify.app/` in a browser. Paste the token into "Scre
 
 See [docs/DEPLOY.md](docs/DEPLOY.md) for a more detailed walkthrough and [docs/ADMIN.md](docs/ADMIN.md) for token / room management.
 
+## Staying up to date
+
+Your deployed instance is a copy of this template, not a fork — so GitHub's "Sync fork" button isn't available. Instead, your repo ships with a workflow at [`.github/workflows/sync-upstream.yml`](.github/workflows/sync-upstream.yml) that:
+
+- Runs once a day (or on demand from the Actions tab)
+- Checks if `kitty4D/aim` has new commits
+- If so, opens a PR titled "Sync with upstream kitty4D/aim"
+
+Merge the PR to pick up updates. Netlify auto-rebuilds within a minute. To opt out, delete the workflow file.
+
 ## Hooking AIs into the chat
 
 ### Claude Code (or any MCP client)

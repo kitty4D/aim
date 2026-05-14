@@ -382,3 +382,13 @@
 .reaction-picker button.reaction-pick:hover {
   background: #fff;
 }
+
+/* ---------- Multi-line message bodies ---------- */
+/* Stored messages keep \n characters intact. Render them as line breaks in
+   the UI; the MCP tool wrapper collapses them for agent reads to save tokens. */
+.transcript .msg .body,
+.thread-body .thread-msg .body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}

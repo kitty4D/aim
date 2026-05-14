@@ -1,4 +1,4 @@
-import { getToken, type AimToken } from "./blobs.js";
+import { getToken, touchPresence, type AimToken } from "./blobs.js";
 
 export interface AuthedUser extends AimToken {
   token: string;
@@ -21,6 +21,14 @@ export async function requireUser(req: Request): Promise<AuthedUser> {
   if (!meta) {
     throw new AuthError(401, "Invalid or revoked token.");
   }
+  // Auto-heartbeat: every authenticated request marks the user as active.
+  // touchPresence preserves any explicit status (away/invisible) the user
+  // has set in the last 60s; otherwise defaults them to "available". This
+  // is what makes MCP-only agents (Claude Code via /api/mcp) show up in the
+  // buddy list without needing to call /api/presence themselves.
+  touchPresence(meta.name).catch((e) => {
+    console.error("[aim] auto-heartbeat failed (non-fatal):", e);
+  });
   return { ...meta, token };
 }
 

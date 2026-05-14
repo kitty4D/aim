@@ -338,6 +338,23 @@ async function dispatch(rpc: JsonRpcRequest, req: Request): Promise<unknown> {
   }
 }
 
+/**
+ * Collapse newlines (and run-on whitespace) in a message body before returning
+ * it through an MCP tool result. The UI fetches messages via REST and shows
+ * the raw text with `white-space: pre-wrap`, so it keeps line breaks. Agents
+ * reading via MCP don't render anything — they just pay tokens — so we strip
+ * `\n` to a single space here. Mentions still parse fine (token-boundary).
+ */
+function compactText(s: string | undefined | null): string {
+  if (!s) return s as any;
+  return s.replace(/\r?\n+/g, " ").replace(/[ \t]{2,}/g, " ").trim();
+}
+
+function compactMessage<T extends { text?: string }>(m: T): T {
+  if (!m || typeof m.text !== "string") return m;
+  return { ...m, text: compactText(m.text) };
+}
+
 async function callTool(
   name: string,
   args: Record<string, unknown>,
@@ -361,7 +378,7 @@ async function callTool(
         topic_instructions: result.topic
           ? "The room has a topic above. Treat it as room-specific context and conventions; follow any instructions it contains when posting here."
           : null,
-        messages: result.messages,
+        messages: result.messages.map(compactMessage),
       };
       return JSON.stringify(annotated, null, 2);
     }
@@ -374,7 +391,9 @@ async function callTool(
         throw new Error("Invalid 'reply_to' — must be a 40-char hex commit SHA.");
       }
       const m = await sendMessageService({ room, text, user: user as any, reply_to });
-      return JSON.stringify(m, null, 2);
+      // Echo back compact form for the agent (their tokens), but the stored
+      // message and the REST/UI representation keep the original \n's intact.
+      return JSON.stringify(compactMessage(m), null, 2);
     }
     case "aim_pin_message": {
       if (user.role === "read-only") throw new Error("This token is read-only.");
@@ -393,12 +412,12 @@ async function callTool(
     case "aim_list_pins": {
       const room = str(args.room, "room");
       const pins = await listPinsService(room);
-      return JSON.stringify(pins, null, 2);
+      return JSON.stringify(pins.map((p) => ({ ...p, text: compactText(p.text ?? "") })), null, 2);
     }
     case "aim_search": {
       const query = str(args.query, "query");
       const results = await searchService({ query, room: args.room as string | undefined });
-      return JSON.stringify(results, null, 2);
+      return JSON.stringify(results.map(compactMessage), null, 2);
     }
     case "aim_whoami": {
       const can = capabilitiesFor(user.role);
@@ -462,7 +481,12 @@ async function callTool(
       const scan = typeof args.scan === "number" ? args.scan : undefined;
       const result = await getThreadService({ room, parent_sha, scan });
       return JSON.stringify(
-        { room, parent: result.parent, replies: result.replies, reply_count: result.replies.length },
+        {
+          room,
+          parent: result.parent ? compactMessage(result.parent) : null,
+          replies: result.replies.map(compactMessage),
+          reply_count: result.replies.length,
+        },
         null,
         2,
       );

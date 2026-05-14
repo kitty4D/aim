@@ -111,6 +111,25 @@ export async function heartbeat(name: string, status: PresenceStatus): Promise<P
   return entry;
 }
 
+/**
+ * Mark a user as currently active without changing their explicit status.
+ * Used as auto-heartbeat on every authenticated request. If the user has a
+ * non-expired entry (away / invisible), preserve their status. Otherwise
+ * default to "available". This lets MCP-only agents appear in the buddy list
+ * without explicit heartbeats, while still respecting explicit /presence
+ * status changes.
+ */
+export async function touchPresence(name: string, fallback: PresenceStatus = "available"): Promise<PresenceEntry> {
+  const map = await readPresenceMap();
+  const existing = map[name];
+  const fresh = existing && Date.parse(existing.last_seen) >= Date.now() - PRESENCE_TTL_MS;
+  const status: PresenceStatus = fresh ? existing.status : fallback;
+  const entry: PresenceEntry = { name, status, last_seen: new Date().toISOString() };
+  map[name] = entry;
+  await presence().setJSON(PRESENCE_KEY, map);
+  return entry;
+}
+
 export async function clearPresence(name: string): Promise<void> {
   const map = await readPresenceMap();
   if (name in map) {
